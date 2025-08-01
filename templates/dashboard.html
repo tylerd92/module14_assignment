@@ -163,6 +163,7 @@
                     <td class="px-6 py-4 whitespace-nowrap">${calc.result}</td>
                     <td class="px-6 py-4 whitespace-nowrap">${new Date(calc.created_at).toLocaleDateString()}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
+                        <a href="/dashboard/view/${calc.id}" class="text-blue-600 hover:text-blue-900">View</a>
                         <button class="text-red-600 hover:text-red-900 delete-calc" data-id="${calc.id}">Delete</button>
                     </td>
                 `;

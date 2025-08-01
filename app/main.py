@@ -57,11 +57,6 @@ def login_page(request: Request):
 def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
-# Dashboard page Route
-
-@app.get("/dashboard", response_class=HTMLResponse, tags=["web"])
-def dashboard_page(request: Request):
-    return templates.TemplateResponse("dashboard.html", {"request": request})
 
 # ------------------------------------------------------------------------------
 # Health Endpoint
@@ -144,6 +139,23 @@ def login_form(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = D
         "access_token": auth_result["access_token"],
         "token_type": "bearer"
     }
+
+# ------------------------------------------------------------------------------
+# Dashboard Endpoints
+# ------------------------------------------------------------------------------
+# Dashboard page Route
+
+@app.get("/dashboard", response_class=HTMLResponse, tags=["web"])
+def dashboard_page(request: Request):
+    return templates.TemplateResponse("dashboard.html", {"request": request})
+
+@app.get("/dashboard/view/{calc_id}", response_class=HTMLResponse, tags=["web"])
+def view_calculation_page(request: Request, calc_id: str):
+    return templates.TemplateResponse("view_calculation.html", {"request": request, "calc_id": calc_id})
+
+@app.get("/dashboard/edit/{calc_id}", response_class=HTMLResponse, tags=["web"])
+def edit_calculation_page(request: Request, calc_id: str):
+    return templates.TemplateResponse("edit_calculation.html", {"request": request, "calc_id": calc_id})
 
 # ------------------------------------------------------------------------------
 # Calculations Endpoints (BREAD)
