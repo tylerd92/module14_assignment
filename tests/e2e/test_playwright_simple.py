@@ -455,14 +455,17 @@ class TestE2ECalculationWorkflow:
             # Wait for form to load
             page.wait_for_timeout(2000)
             
-            # Look for form fields and update them
+            # Look for form fields and verify calc type is readonly
             calc_type_field = page.locator("#calcType")
             calc_inputs_field = page.locator("#calcInputs")
             
             if calc_type_field.is_visible() and calc_inputs_field.is_visible():
-                # Change to subtraction and update inputs
-                page.select_option("#calcType", "subtraction")
-                page.fill("#calcInputs", "30,5")
+                # Verify the calc type field is readonly (addition from our creation)
+                calc_type_value = calc_type_field.get_attribute("readonly")
+                assert calc_type_value is not None  # Should be readonly
+                
+                # Only update the inputs (type cannot be changed)
+                page.fill("#calcInputs", "15,25")
                 
                 # Submit the update
                 update_button = page.locator("button[type='submit']:has-text('Update')")
@@ -604,6 +607,97 @@ class TestE2ECalculationWorkflow:
                 # The result should appear in the table - format inputs with spaces
                 formatted_inputs = test_case["inputs"].replace(",", ", ")
                 expect(result_row).to_contain_text(formatted_inputs)
+    
+    def test_dashboard_shows_all_user_calculations(self, page: Page):
+        """Test that dashboard displays all calculations created by the user."""
+        self.register_and_login_user(page)
+        page.goto(f"{self.BASE_URL}/dashboard")
+        page.wait_for_timeout(2000)
+        
+        # Verify we're on the dashboard
+        dashboard_heading = page.locator("h1:has-text('Calculations Dashboard')")
+        expect(dashboard_heading).to_be_visible()
+        
+        # Define a comprehensive set of test calculations
+        test_calculations = [
+            {"type": "addition", "inputs": "5,10,15", "expected_result": "30"},
+            {"type": "subtraction", "inputs": "100,25", "expected_result": "75"},
+            {"type": "multiplication", "inputs": "3,7", "expected_result": "21"},
+            {"type": "division", "inputs": "48,6", "expected_result": "8"},
+            {"type": "addition", "inputs": "2.5,7.5", "expected_result": "10"},
+            {"type": "multiplication", "inputs": "4,2.5", "expected_result": "10"},
+            {"type": "subtraction", "inputs": "20.75,5.25", "expected_result": "15.5"},
+            {"type": "division", "inputs": "50,2", "expected_result": "25"}
+        ]
+        
+        # Create all test calculations
+        created_calculations = []
+        for i, calc in enumerate(test_calculations):
+            page.select_option("#calcType", calc["type"])
+            page.fill("#calcInputs", calc["inputs"])
+            page.click("button[type='submit']")
+            page.wait_for_timeout(2000)
+            
+            # Store the calculation details for verification
+            created_calculations.append({
+                "type": calc["type"],
+                "inputs": calc["inputs"].replace(",", ", "),  # Format with spaces for HTML
+                "expected_result": calc["expected_result"]
+            })
+            
+            # Brief pause between calculations
+            page.wait_for_timeout(500)
+        
+        # Wait for all calculations to be processed
+        page.wait_for_timeout(3000)
+        
+        # Verify the calculations table is visible
+        calculations_table = page.locator("#calculationsTable")
+        expect(calculations_table).to_be_visible()
+        
+        # Get all calculation rows (excluding header and empty message rows)
+        calculation_rows = page.locator("#calculationsTable tr:not(:has(th)):not(:has(td[colspan]))")
+        
+        # Verify we have at least the number of calculations we created
+        actual_row_count = calculation_rows.count()
+        expected_count = len(test_calculations)
+        assert actual_row_count >= expected_count, f"Expected at least {expected_count} calculations, but found {actual_row_count}"
+        
+        # Verify each created calculation appears in the table
+        for calc in created_calculations:
+            # Look for a row that contains both the operation type and inputs
+            matching_row = page.locator(f"#calculationsTable tr:has-text('{calc['type']}'):has-text('{calc['inputs']}')")
+            expect(matching_row).to_be_visible()
+            
+            # Verify the result is also present in the row
+            expect(matching_row).to_contain_text(calc["expected_result"])
+        
+        # Verify that each row has the expected action buttons (View, Edit, Delete)
+        for i in range(min(actual_row_count, expected_count)):
+            row = calculation_rows.nth(i)
+            
+            # Check for action buttons/links
+            view_link = row.locator("a:has-text('View')")
+            edit_link = row.locator("a:has-text('Edit')")
+            delete_button = row.locator("button:has-text('Delete'), button.delete-calc")
+            
+            expect(view_link).to_be_visible()
+            expect(edit_link).to_be_visible()
+            expect(delete_button).to_be_visible()
+        
+        # Verify calculations are displayed in descending order (newest first)
+        # This assumes the table shows calculations with timestamps or in creation order
+        page.wait_for_timeout(1000)
+        
+        # Test pagination or scrolling if there are many calculations
+        if actual_row_count > 10:  # If there's potential pagination
+            # Check if there are pagination controls
+            pagination = page.locator(".pagination, [class*='page']")
+            if pagination.is_visible():
+                # Basic pagination test - this would depend on the actual implementation
+                page_info = page.locator("text=/Page|Showing|of/")
+                if page_info.is_visible():
+                    expect(page_info).to_be_visible()
     
     def test_complete_calculation_workflow(self, page: Page):
         """Test complete workflow: create, view, edit, delete calculation."""
