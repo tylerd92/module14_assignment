@@ -43,3 +43,24 @@ HEADLESS=true python3 -m pytest tests/e2e/test_playwright_simple.py -v
 # Run in non-headless mode (visible browser) for debugging
 HEADLESS=false python3 -m pytest tests/e2e/test_playwright_simple.py -v
 ```
+
+Browse calculations
+![image](images/browse_calculations.png)
+
+Create a new calculation
+![image](images/create_calculation.png)
+
+View a calculation
+![image](images/view_calculation.png)
+
+Edit a calculation
+![image](images/edit_calculation.png)
+
+Delete a calculation
+![image](images/delete_calculation.png)
+
+GitHub Action Workflow
+![image](images/github_actions.png)
+
+Docker Hub
+![image](images/docker_hub.png)
